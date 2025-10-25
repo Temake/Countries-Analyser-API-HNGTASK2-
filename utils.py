@@ -6,6 +6,14 @@ from typing import Optional
 # settings = get_settings()
 
 
+import requests
+import random
+from typing import Optional
+from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
+import os
+
+
 def fetch_countries_data():
     try:
         response = requests.get(
@@ -47,3 +55,46 @@ def calculate_estimated_gdp(population: int, exchange_rate: Optional[float]) -> 
         return 0.0
     multiplier = random.uniform(1000, 2000)
     return (population * multiplier) / exchange_rate
+
+
+def generate_summary_image(total_countries: int, top_countries: list, last_refreshed: str):
+    img_width = 800
+    img_height = 600
+    bg_color = (255, 255, 255)
+    text_color = (0, 0, 0)
+    
+    image = Image.new('RGB', (img_width, img_height), bg_color)
+    draw = ImageDraw.Draw(image)
+    
+    try:
+        font_large = ImageFont.truetype("arial.ttf", 36)
+        font_medium = ImageFont.truetype("arial.ttf", 24)
+        font_small = ImageFont.truetype("arial.ttf", 18)
+    except:
+        font_large = ImageFont.load_default()
+        font_medium = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+    
+    y_position = 50
+    
+    draw.text((50, y_position), "Country Data Summary", fill=text_color, font=font_large)
+    y_position += 80
+    
+    draw.text((50, y_position), f"Total Countries: {total_countries}", fill=text_color, font=font_medium)
+    y_position += 60
+    
+    draw.text((50, y_position), "Top 5 Countries by GDP:", fill=text_color, font=font_medium)
+    y_position += 40
+    
+    for i, country in enumerate(top_countries[:5], 1):
+        gdp_formatted = f"{country.estimated_gdp:,.2f}" if country.estimated_gdp else "0.00"
+        text = f"{i}. {country.name}: ${gdp_formatted}"
+        draw.text((70, y_position), text, fill=text_color, font=font_small)
+        y_position += 35
+    
+    y_position += 30
+    draw.text((50, y_position), f"Last Refreshed: {last_refreshed}", fill=text_color, font=font_small)
+    
+    os.makedirs("cache", exist_ok=True)
+    image.save("cache/summary.png")
+

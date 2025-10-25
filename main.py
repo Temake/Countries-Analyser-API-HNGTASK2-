@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from typing import Optional
 from datetime import datetime, timezone
@@ -8,8 +9,10 @@ from utils import (
     fetch_countries_data,
     fetch_exchange_rates,
     get_first_currency_code,
-    calculate_estimated_gdp
+    calculate_estimated_gdp,
+    generate_summary_image
 )
+import os
 
 
 @asynccontextmanager
@@ -81,6 +84,15 @@ async def get_countries_data(session: Session = Depends(get_session)):
             session.add(country)
     
     session.commit()
+    
+    total_countries = session.exec(select(func.count(Country.id))).first()
+    top_countries = session.exec(
+        select(Country).order_by(Country.estimated_gdp.desc()).limit(5)
+    ).all()
+    last_refreshed_str = refresh_timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+    
+    generate_summary_image(total_countries, top_countries, last_refreshed_str)
+    
     return {"message": "Country data refreshed successfully."}
 
 
@@ -115,6 +127,19 @@ async def get_countries(
     
     countries = session.exec(query).all()
     return countries
+
+
+@app.get('/countries/image', status_code=200)
+async def image_summary():
+    image_path = "cache/summary.png"
+    
+    if not os.path.exists(image_path):
+        raise HTTPException(
+            status_code=404,
+            detail={"error": "Summary image not found"}
+        )
+    
+    return FileResponse(image_path, media_type="image/png")
 
 
 @app.get('/countries/{name}', status_code=200)
@@ -153,12 +178,8 @@ async def delete_country_by_name(name: str, session: Session = Depends(get_sessi
 async def get_status(session: Session = Depends(get_session)):
     total_countries = session.exec(select(func.count(Country.id))).first()
     last_refreshed_at = session.exec(select(func.max(Country.last_refreshed_at))).first()
+    
     return {
-        "total_countries": total_countries,
-        "last_refreshed_at": last_refreshed_at
+        "total_countries": total_countries or 0,
+        "last_refreshed_at": last_refreshed_at.isoformat() if last_refreshed_at else None
     }
-
-
-@app.get('/countries/image', status_code=200)
-async def image_summary(session: Session = Depends(get_session)):
-    pass
