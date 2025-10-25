@@ -4,7 +4,7 @@ from config import config
 
 class Country(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True, unique=True)  
+    name: str = Field(index=True)  
     capital: str | None = None
     region: str | None = Field(default=None, index=True)  
     population: int  
@@ -24,7 +24,7 @@ if config.ENV_STATE == 'prod':
 else:
 
     connect_args = {"check_same_thread": False}
-    engine = create_engine(database_url, echo=True, connect_args=connect_args,pool_reset_on_return='commit')
+    engine = create_engine(database_url, echo=True, connect_args=connect_args,)
 
 
 

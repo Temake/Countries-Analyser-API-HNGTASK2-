@@ -1,16 +1,16 @@
 import requests
 import random
 from typing import Optional
-from config import get_settings
+# from config import get_settings
 
-settings = get_settings()
+# settings = get_settings()
 
 
 def fetch_countries_data():
     try:
         response = requests.get(
-            settings.countries_api_url,
-            timeout=settings.api_timeout
+            'https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies',
+            timeout=30
         )
         response.raise_for_status()
         return response.json()
@@ -23,8 +23,8 @@ def fetch_countries_data():
 def fetch_exchange_rates():
     try:
         response = requests.get(
-            settings.exchange_rate_api_url,
-            timeout=settings.api_timeout
+            'https://open.er-api.com/v6/latest/USD',
+            timeout=30
         )
         response.raise_for_status()
         data = response.json()
@@ -42,8 +42,8 @@ def get_first_currency_code(currencies: list) -> Optional[str]:
     return first_currency.get("code")
 
 
-def calculate_estimated_gdp(population: int, exchange_rate: Optional[float]) -> Optional[float]:
+def calculate_estimated_gdp(population: int, exchange_rate: Optional[float]) -> float:
     if exchange_rate is None or exchange_rate == 0:
-        return None
+        return 0.0
     multiplier = random.uniform(1000, 2000)
     return (population * multiplier) / exchange_rate

@@ -56,3 +56,4 @@ htmlcov/
 
 # uv
 .uv/
+yt.py
