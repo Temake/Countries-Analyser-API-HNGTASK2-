@@ -1,9 +1,17 @@
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime, timezone
 
-
+class Country(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    capital: str | None = None
+    population: int | None = None
+    currency_code: str | None = None
+    exchange_rate: float | None = None
+    estimated_gdp: float | None = None
+    flag_url: str | None = None
+    last_refreshed_at: datetime | None = None
     
-
 sqlite_file_name = "database.db"
 database_url = f"sqlite:///{sqlite_file_name}"
 
