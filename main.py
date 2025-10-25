@@ -40,6 +40,7 @@ async def get_countries_data(session: Session = Depends(get_session)):
         )
     
     refresh_timestamp = datetime.now(timezone.utc)
+
     
     for country_info in country_data:
         name = country_info.get("name")
@@ -83,7 +84,7 @@ async def get_countries_data(session: Session = Depends(get_session)):
     return {"message": "Country data refreshed successfully."}
 
 
-@app.get('/countries', status_code=200)
+@app.get('/countries', status_code=200,response_model=list[Country])
 async def get_countries(
     region: Optional[str] = Query(None),
     currency: Optional[str] = Query(None),
@@ -118,17 +119,44 @@ async def get_countries(
 
 @app.get('/countries/{name}', status_code=200)
 async def get_country_by_name(name: str, session: Session = Depends(get_session)):
-    pass
+    country = session.exec(
+        select(Country).where(func.lower(Country.name) == name.lower())
+    ).first()
+    
+    if not country:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": "Country not found", "details": f"No data found for country '{name}'"}
+        )
+    
+    return country
 
 
 @app.delete('/countries/{name}')
 async def delete_country_by_name(name: str, session: Session = Depends(get_session)):
-    pass
+    country = session.exec(
+        select(Country).where(func.lower(Country.name) == name.lower())
+    ).first()
+    
+    if not country:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": "Country not found", "details": f"No data found for country '{name}'"}
+        )
+    
+    session.delete(country)
+    session.commit()
+    return {"message": "Country deleted successfully."}
 
 
 @app.get('/status', status_code=200)
 async def get_status(session: Session = Depends(get_session)):
-    pass
+    total_countries = session.exec(select(func.count(Country.id))).first()
+    last_refreshed_at = session.exec(select(func.max(Country.last_refreshed_at))).first()
+    return {
+        "total_countries": total_countries,
+        "last_refreshed_at": last_refreshed_at
+    }
 
 
 @app.get('/countries/image', status_code=200)
