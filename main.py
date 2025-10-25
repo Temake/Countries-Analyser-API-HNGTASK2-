@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Depends, Query, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Depends, Query, HTTPException, status
+from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 from typing import Optional
 from datetime import datetime, timezone
@@ -12,6 +12,12 @@ from utils import (
     calculate_estimated_gdp,
     generate_summary_image
 )
+from schemas import (
+    CountryResponse,
+    ErrorResponse,
+    StatusResponse,
+    MessageResponse
+)
 import os
 
 
@@ -21,10 +27,30 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Country Info API", lifespan=lifespan)
+app = FastAPI(
+    title="Country Info API",
+    description="RESTful API for country data with currency exchange rates",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 
-@app.post('/countries/refresh', status_code=200)
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"error": "Internal server error"}
+    )
+
+
+@app.post(
+    '/countries/refresh',
+    status_code=200,
+    response_model=MessageResponse,
+    responses={
+        503: {"model": ErrorResponse, "description": "External API unavailable"}
+    }
+)
 async def get_countries_data(session: Session = Depends(get_session)):
     try:
         country_data = fetch_countries_data()
@@ -96,7 +122,14 @@ async def get_countries_data(session: Session = Depends(get_session)):
     return {"message": "Country data refreshed successfully."}
 
 
-@app.get('/countries', status_code=200,response_model=list[Country])
+@app.get(
+    '/countries',
+    status_code=200,
+    response_model=list[CountryResponse],
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal server error"}
+    }
+)
 async def get_countries(
     region: Optional[str] = Query(None),
     currency: Optional[str] = Query(None),
@@ -129,7 +162,13 @@ async def get_countries(
     return countries
 
 
-@app.get('/countries/image', status_code=200)
+@app.get(
+    '/countries/image',
+    status_code=200,
+    responses={
+        404: {"model": ErrorResponse, "description": "Image not found"}
+    }
+)
 async def image_summary():
     image_path = "cache/summary.png"
     
@@ -142,7 +181,14 @@ async def image_summary():
     return FileResponse(image_path, media_type="image/png")
 
 
-@app.get('/countries/{name}', status_code=200)
+@app.get(
+    '/countries/{name}',
+    status_code=200,
+    response_model=CountryResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Country not found"}
+    }
+)
 async def get_country_by_name(name: str, session: Session = Depends(get_session)):
     country = session.exec(
         select(Country).where(func.lower(Country.name) == name.lower())
@@ -157,7 +203,14 @@ async def get_country_by_name(name: str, session: Session = Depends(get_session)
     return country
 
 
-@app.delete('/countries/{name}')
+@app.delete(
+    '/countries/{name}',
+    status_code=200,
+    response_model=MessageResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Country not found"}
+    }
+)
 async def delete_country_by_name(name: str, session: Session = Depends(get_session)):
     country = session.exec(
         select(Country).where(func.lower(Country.name) == name.lower())
@@ -166,9 +219,15 @@ async def delete_country_by_name(name: str, session: Session = Depends(get_sessi
     if not country:
         raise HTTPException(
             status_code=404,
-            detail={"error": "Country not found", "details": f"No data found for country '{name}'"}
+            detail={"error": "Country not found", "details": f"No data found for country '{name}'"})
         )
     
+@app.get(
+    '/status',
+    status_code=200,
+    response_model=StatusResponse
+)
+async def get_status(session: Session = Depends(get_session)):
     session.delete(country)
     session.commit()
     return {"message": "Country deleted successfully."}
