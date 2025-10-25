@@ -50,9 +50,13 @@ def get_first_currency_code(currencies: list) -> Optional[str]:
     return first_currency.get("code")
 
 
-def calculate_estimated_gdp(population: int, exchange_rate: Optional[float]) -> float:
-    if exchange_rate is None or exchange_rate == 0:
+def calculate_estimated_gdp(population: int, exchange_rate: Optional[float], currency_code: Optional[str]) -> Optional[float]:
+    if currency_code is None:
         return 0.0
+    if exchange_rate is None:
+        return None
+    if exchange_rate == 0:
+        return None
     multiplier = random.uniform(1000, 2000)
     return (population * multiplier) / exchange_rate
 

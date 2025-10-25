@@ -80,7 +80,7 @@ async def get_countries_data(session: Session = Depends(get_session)):
         currencies = country_info.get("currencies", [])
         currency_code = get_first_currency_code(currencies)
         exchange_rate = exchange_rates.get(currency_code) if currency_code else None
-        estimated_gdp = calculate_estimated_gdp(population, exchange_rate)
+        estimated_gdp = calculate_estimated_gdp(population, exchange_rate, currency_code)
         
         country = session.exec(
             select(Country).where(func.lower(Country.name) == name.lower())
