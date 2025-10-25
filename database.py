@@ -1,12 +1,15 @@
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from datetime import datetime, timezone
+from config import get_settings
+
 
 class Country(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    name: str
+    name: str = Field(index=True, unique=True)  # Required, indexed for fast lookups
     capital: str | None = None
-    population: int | None = None
-    currency_code: str | None = None
+    region: str | None = Field(default=None, index=True)  # Added missing field, indexed for filtering
+    population: int  # Required field (not nullable)
+    currency_code: str | None = Field(default=None, index=True)  # Indexed for filtering
     exchange_rate: float | None = None
     estimated_gdp: float | None = None
     flag_url: str | None = None

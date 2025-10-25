@@ -1,12 +1,18 @@
 from fastapi import FastAPI, Depends, Query
 from contextlib import asynccontextmanager
-from typing import _NoDefaultType, Optional
-from database import get_session,create_db_and_tables
+from typing import Optional
+from database import get_session, create_db_and_tables
 from sqlmodel import Session
+from config import get_settings
+
+
+# Load settings
+settings = get_settings()
 
 
 @asynccontextmanager
-def lifespan(app:FastAPI):
+async def lifespan(app: FastAPI):
+    """Initialize database on startup"""
     create_db_and_tables()
     yield
     
