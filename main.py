@@ -3,11 +3,10 @@ from contextlib import asynccontextmanager
 from typing import Optional
 from database import get_session, create_db_and_tables
 from sqlmodel import Session
-from config import get_settings
 
 
-# Load settings
-settings = get_settings()
+
+
 
 
 @asynccontextmanager

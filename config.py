@@ -1,32 +1,38 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
+from typing import Optional
+import os
+from dotenv import load_dotenv
+load_dotenv(".env")
+
+
+
+from pydantic import BaseModel
+
 from functools import lru_cache
 
+class BaselConfig(BaseModel):
+    ENV_STATE :str = os.getenv("ENV_STATE")
+    model_config=SettingsConfigDict(env_file=".env")
 
-class Settings(BaseSettings):
-    """Application settings with environment variable support"""
-    
-    # Database
-    database_url: str = "sqlite:///database.db"
-    
-    # API Configuration
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    
-    # External APIs
-    countries_api_url: str = "https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies"
-    exchange_rate_api_url: str = "https://open.er-api.com/v6/latest/USD"
-    
-    # Timeout settings
-    api_timeout: int = 30
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False
-    )
 
+class GlobalConfig(BaselConfig):
+    DATABASE_URL : Optional[str] = "sqlite:///data.db"
+    DB_ROLL_BACK: bool = False
+    
+class DevConfig(GlobalConfig):
+    DATABASE_URL : str  = os.getenv("DEV_DATABASE_URL", "sqlite:///data.db")
+    
+class ProdConfig(GlobalConfig):
+    DATABASE_URL: str = os.getenv("PROD_DATABASE_URL") 
+    model_config= SettingsConfigDict(env_prefix="PROD_")
+   
+    
 
 @lru_cache()
-def get_settings() -> Settings:
-    """Get cached settings instance"""
-    return Settings()
+def get_config(env_state:str):
+    configs= {"dev": DevConfig,"prod": ProdConfig}
+    return configs[env_state]()
+
+config= get_config(BaselConfig().ENV_STATE)
+
+

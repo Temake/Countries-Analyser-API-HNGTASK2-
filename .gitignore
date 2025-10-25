@@ -44,8 +44,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
-
-# Cache directory (keep folder but ignore image files)
 cache/*.png
 
 # Logs
