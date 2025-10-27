@@ -15,16 +15,9 @@ class Country(SQLModel, table=True):
     last_refreshed_at: datetime | None = None
     
 sqlite_file_name = "database.db"
-print("Database URL:", config.DATABASE_URL)
-database_url = config.DATABASE_URL
-
-if config.ENV_STATE == 'prod':
-     engine = create_engine(database_url, echo=True,)
-
-else:
-
-    connect_args = {"check_same_thread": False}
-    engine = create_engine(database_url, echo=True, connect_args=connect_args,)
+database_url ='mysql://root:UadCEWemDKKlGJYKQRiBmyUopWJjdagg@turntable.proxy.rlwy.net:14869/railway'
+connect_args = {"check_same_thread": False}
+engine = create_engine(database_url, echo=True, )
 
 
 
